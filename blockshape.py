@@ -5,44 +5,50 @@ class BlockShape():
     def __init__(self, shape: Tetromino):
         self.shape = shape
         self.rot_idx = 0
-        self.blocks = []
-        self.generate_blocks()
+        self.blocks = {0: None, 1: None, 2: None, 3: None}
+        self.initialize_blocks()
     
     def __str__(self):
-        dims = self.shape.value[2]
-        grid = [['.' for _ in range(dims[1])] for _ in range(dims[0])]
-        for b in self.blocks:
-            x,y = b.coords()
+        w,h = self.shape.value['print_size']
+        grid = [['.' for _ in range(h)] for _ in range(w)]
+        for b in self.blocks.values():
+            x,y = b.local_coords()
             grid[y][x] = 'O'
         return '\n'.join([str(row) for row in grid])
     
-    def generate_blocks(self):
-        rotation = self.shape.value[0][self.rot_idx]
-        color = self.shape.value[1]
-        self.blocks = [Block(x,y,color) for (x,y) in rotation]
+    def initialize_blocks(self):
+        position = self.shape.value['rotations'][0]
+        color = self.shape.value['color']
+        for i in range(4):
+            x,y = position[i]
+            self.blocks[i] = Block(x,y,color)
+    
+    def update_blocks(self):
+        position = self.shape.value['rotations'][self.rot_idx]
+        for i in range(4):
+            x,y = position[i]
+            self.blocks[i].set_local_pos(x,y)
     
     def delete_all(self):
-        for b in self.blocks:
-            b.delete()
-    
-    def move_down(self):
-        for b in self.blocks:
-            b.shift(d_y=-1)
-    
-    def move_right(self):
-        for b in self.blocks:
-            b.shift(d_x=1)
-    
-    def move_left(self):
-        for b in self.blocks:
-            b.shift(d_x=-1)
-    
+        for i in range(4):
+            self.blocks[i] = None
+        
     def rotate_right(self):
         self.rot_idx = (self.rot_idx + 1) % 4
-        self.generate_blocks()
+        self.update_blocks()
     
     def rotate_left(self):
         self.rot_idx = (self.rot_idx - 1) % 4
-        self.generate_blocks()
-
-
+        self.update_blocks()
+    
+    def shift_right(self):
+        for b in self.blocks.values():
+            b.shift(d_x=1)
+    
+    def shift_left(self):
+        for b in self.blocks.values():
+            b.shift(d_x=-1)
+    
+    def shift_down(self):
+        for b in self.blocks.values():
+            b.shift(d_y=1)

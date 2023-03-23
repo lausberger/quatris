@@ -7,24 +7,31 @@ class Block():
     def __init__(self, x: int, y: int, color: Color):
         self.x = x
         self.y = y
-        self.global_x = None
-        self.global_y = None
+        self.x_offset = None
+        self.y_offset = None
         self.color = color
+        self.exists = False
     
-    def coords(self):
+    def coords(self) -> tuple[int, int]:
+        return (self.x + self.x_offset, self.y + self.y_offset) if self.exists else None
+
+    def local_coords(self) -> tuple[int, int]:
         return (self.x, self.y)
     
-    def global_coords(self):
-        return (self.global_x, self.global_y)
-    
     def delete(self):
-        self.global_x = None
-        self.global_y = None
+        self.x_go = None
+        self.x_go = None
+        self.exists = False
     
     def shift(self, d_x: int = 0, d_y: int = 0):
-        self.global_x += d_x
-        self.global_y += d_y
+        self.x_offset += d_x
+        self.y_offset += d_y
     
-    def setpos(self, x: int, y: int):
-        self.global_x = x
-        self.global_y = y
+    def set_pos(self, x_offset: int, y_offset: int):
+        self.x_offset = x_offset
+        self.y_offset = y_offset
+        self.exists = True
+    
+    def set_local_pos(self, x: int, y: int):
+        self.x = x
+        self.y = y
