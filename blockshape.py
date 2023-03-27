@@ -18,10 +18,7 @@ class BlockShape():
     
     def blocks(self) -> list[Block]:
         return self.block_set.values()
-    
-    def has_block(self, block: Block) -> bool:
-        return block in self.blocks()
-    
+
     def initialize_blocks(self):
         position = self.shape.value['rotations'][0]
         color = self.shape.value['color']
@@ -34,9 +31,6 @@ class BlockShape():
         for i, block in enumerate(self.blocks()):
             x,y = position[i]
             block.set_local_pos(x,y)
-        # for i in range(4):
-        #     x,y = position[i]
-        #     self.blocks[i].set_local_pos(x,y)
     
     def delete_all(self):
         self.block_set = {0: None, 1: None, 2: None, 3: None}
