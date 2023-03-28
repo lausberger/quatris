@@ -3,13 +3,14 @@ from blockmatrix import BlockMatrix
 from color import Color
 from tetromino import Tetromino
 
+
 class GameRenderer():
-    def __init__(self, board: BlockMatrix, current_shapes: list[Tetromino]):
+    def __init__(self, board: BlockMatrix):
         self.board = board
-        self.current_shapes = current_shapes
         # fonts
         self.nes_font = pygame.font.Font('fonts/Pixel_NES.ttf', 18)
         self.logo_font = pygame.font.Font('fonts/friz-quadrata-bold-cyrillic.ttf', 30)
+        self.footer_font = pygame.font.Font('fonts/Pixel_NES.ttf', 12)
         # constants
         self.block_size = 20
         self.p_block_size = int(self.block_size * .75)
@@ -20,13 +21,10 @@ class GameRenderer():
         self.h_y_start = self.border_width + self.nes_font.get_height()
         self.h_y_end = self.h_y_start + self.p_block_size * 4
         # block matrix
-        self.m_width = self.block_size * self.board.width
-        self.m_height = self.block_size * self.board.height
         self.m_x_start = self.h_x_end + self.border_width
-        # self.m_x_start = self.border_width
-        self.m_x_end = self.m_x_start + self.m_width
+        self.m_x_end = self.m_x_start + self.block_size * self.board.width
         self.m_y_start = self.border_width
-        self.m_y_end = self.border_width + self.m_height
+        self.m_y_end = self.border_width + self.block_size * self.board.height
         # next block preview
         self.p_x_start = self.m_x_end + self.border_width
         self.p_x_end = self.p_x_start + self.p_block_size * 4
@@ -39,7 +37,7 @@ class GameRenderer():
         self.info_y_end = self.info_y_start + self.p_block_size * 6
         # game window
         self.disp_width = self.info_x_end + self.border_width
-        self.disp_height = self.m_height + self.border_width * 2 + self.logo_font.get_height()    
+        self.disp_height = self.m_y_end + self.border_width + self.logo_font.get_height() + self.footer_font.get_height()
 
     def update_info(self, score: int, lines_cleared: int, current_level: int, current_shapes: list[Tetromino], held_shape: Tetromino):
         self.score = score
@@ -58,7 +56,12 @@ class GameRenderer():
         # block matrix
         for x, x_dim in enumerate(range(self.m_x_start, self.m_x_end, self.block_size)):
             for y, y_dim in enumerate(range(self.m_y_start, self.m_y_end, self.block_size)):
-                square = pygame.Rect(x_dim, y_dim, self.block_size, self.block_size)
+                square = pygame.Rect(
+                    x_dim, 
+                    y_dim, 
+                    self.block_size, 
+                    self.block_size
+                )
                 block = self.board.block_matrix[y][x]
                 if block:
                     pygame.draw.rect(self.screen, block.color.value, square, 0)
@@ -70,7 +73,12 @@ class GameRenderer():
             x,y = block.coords()
             x_dim = self.m_x_start + (x * self.block_size)
             y_dim = self.m_y_start + (y * self.block_size)
-            square = pygame.Rect(x_dim, y_dim, self.block_size, self.block_size)
+            square = pygame.Rect(
+                x_dim, 
+                y_dim, 
+                self.block_size, 
+                self.block_size
+            )
             pygame.draw.rect(self.screen, block.color.value, square, 0)
             pygame.draw.rect(self.screen, Color.GRAY.value, square, 1)
 
@@ -78,7 +86,12 @@ class GameRenderer():
         # 4x4 preview window
         for x in range(4):
             for y in range(4):
-                square = pygame.Rect(self.p_x_start + (self.p_block_size * x), self.p_y_start + (self.p_block_size * y), self.p_block_size, self.p_block_size)
+                square = pygame.Rect(
+                    self.p_x_start + (self.p_block_size * x), 
+                    self.p_y_start + (self.p_block_size * y), 
+                    self.p_block_size, 
+                    self.p_block_size
+                )
                 pygame.draw.rect(self.screen, Color.BLACK.value, square, 0)
         # preview piece with offset if needed
         next_block = self.current_shapes[1]
@@ -87,7 +100,12 @@ class GameRenderer():
         y_offset = 0 if x_dim == 4 else self.p_block_size
         for x in range(x_dim):
             for y in range(y_dim):
-                square = pygame.Rect(x_offset + self.p_x_start + (self.p_block_size * x), y_offset + self.p_y_start + (self.p_block_size * y), self.p_block_size, self.p_block_size)
+                square = pygame.Rect(
+                    x_offset + self.p_x_start + (self.p_block_size * x), 
+                    y_offset + self.p_y_start + (self.p_block_size * y), 
+                    self.p_block_size, 
+                    self.p_block_size
+                )
                 if (x,y) in next_block.value['rotations'][0]:
                     pygame.draw.rect(self.screen, next_block.value['color'].value, square, 0)
                     pygame.draw.rect(self.screen, Color.GRAY.value, square, 1)
@@ -96,7 +114,12 @@ class GameRenderer():
         # 4x4 preview window
         for x in range(4):
             for y in range(4):
-                square = pygame.Rect(self.h_x_start + (self.p_block_size * x), self.h_y_start + (self.p_block_size * y), self.p_block_size, self.p_block_size)
+                square = pygame.Rect(
+                    self.h_x_start + (self.p_block_size * x), 
+                    self.h_y_start + (self.p_block_size * y), 
+                    self.p_block_size, 
+                    self.p_block_size
+                )
                 pygame.draw.rect(self.screen, Color.BLACK.value, square, 0)
         # hold piece with offset if needed
         if self.held_shape:
@@ -105,7 +128,12 @@ class GameRenderer():
             y_offset = 0 if x_dim == 4 else self.p_block_size
             for x in range(x_dim):
                 for y in range(y_dim):
-                    square = pygame.Rect(x_offset + self.h_x_start + (self.p_block_size * x), y_offset + self.h_y_start + (self.p_block_size * y), self.p_block_size, self.p_block_size)
+                    square = pygame.Rect(
+                        x_offset + self.h_x_start + (self.p_block_size * x), 
+                        y_offset + self.h_y_start + (self.p_block_size * y), 
+                        self.p_block_size, 
+                        self.p_block_size
+                    )
                     if (x,y) in self.held_shape.value['rotations'][0]:
                         pygame.draw.rect(self.screen, self.held_shape.value['color'].value, square, 0)
                         pygame.draw.rect(self.screen, Color.GRAY.value, square, 1)
@@ -114,38 +142,107 @@ class GameRenderer():
         # black box
         for x in range(8):
             for y in range(10):
-                square = pygame.Rect(self.info_x_start + (self.p_block_size * x), self.info_y_start + (self.p_block_size * y), self.p_block_size, self.p_block_size)
+                square = pygame.Rect(
+                    self.info_x_start + (self.p_block_size * x), 
+                    self.info_y_start + (self.p_block_size * y), 
+                    self.p_block_size, 
+                    self.p_block_size
+                )
                 pygame.draw.rect(self.screen, Color.BLACK.value, square, 0)
         # score
         score_text = self.nes_font.render('Score', False, Color.WHITE.value)    
-        self.screen.blit(score_text, (self.info_x_start + self.border_width, self.info_y_start))
+        self.screen.blit(
+            score_text, 
+            (
+                self.info_x_start + self.border_width, 
+                self.info_y_start
+            )
+        )
         # score number
         score_num_text = self.nes_font.render(str(self.score), False, Color.WHITE.value)
-        self.screen.blit(score_num_text, (self.info_x_start + self.border_width, self.info_y_start + score_text.get_height()))
+        self.screen.blit(
+            score_num_text, 
+            (
+                self.info_x_start + self.border_width, 
+                self.info_y_start + self.nes_font.get_height()
+            )
+        )
         # lines
         lines_text = self.nes_font.render('Lines', False, Color.WHITE.value)
-        self.screen.blit(lines_text, (self.info_x_start + self.border_width, self.info_y_start + score_text.get_height() + score_num_text.get_height() + self.border_width))
+        self.screen.blit(
+            lines_text, 
+            (
+                self.info_x_start + self.border_width, 
+                self.info_y_start + self.nes_font.get_height() * 2 + self.border_width
+            )
+        )
         # lines number
         lines_num_text = self.nes_font.render(str(self.lines_cleared), False, Color.WHITE.value)
-        self.screen.blit(lines_num_text, (self.info_x_start + self.border_width, self.info_y_start + score_text.get_height() + score_num_text.get_height() + lines_text.get_height() + self.border_width))
+        self.screen.blit(
+            lines_num_text, 
+            (
+                self.info_x_start + self.border_width, 
+                self.info_y_start + self.nes_font.get_height() * 3 + self.border_width
+            )
+        )
         # level
         level_text = self.nes_font.render('Level', False, Color.WHITE.value)
-        self.screen.blit(level_text, (self.info_x_start + self.border_width, self.info_y_start + score_text.get_height() + score_num_text.get_height() + lines_text.get_height() + lines_num_text.get_height() + self.border_width * 2))
+        self.screen.blit(
+            level_text, 
+            (
+                self.info_x_start + self.border_width, 
+                self.info_y_start + self.nes_font.get_height() * 4 + self.border_width * 2
+            )
+        )
         # level number
-        level_num_text = self.nes_font.render(str(self.current_level), False, Color.WHITE.value)
-        self.screen.blit(level_num_text, (self.info_x_start + self.border_width, self.info_y_start + score_text.get_height() + score_num_text.get_height() + lines_text.get_height() + lines_num_text.get_height() + level_text.get_height() + self.border_width * 2))
-
+        level_num_text = self.nes_font.render(str(self.current_level), False, Color.WHITE.value
+        )
+        self.screen.blit(
+            level_num_text, 
+            (
+                self.info_x_start + self.border_width, 
+                self.info_y_start + self.nes_font.get_height() * 5 + self.border_width * 2
+            )
+        )
     
     def draw_text(self):
         # hold shape
-        hold_text = self.nes_font.render("hold", False, Color.WHITE.value)
-        self.screen.blit(hold_text, ((self.h_x_end + self.h_x_start) // 2 - hold_text.get_width() // 2, self.border_width))
+        hold_text = self.nes_font.render('Hold', False, Color.WHITE.value
+        )
+        self.screen.blit(
+            hold_text, 
+            (
+                (self.h_x_end + self.h_x_start) // 2 - hold_text.get_width() // 2, 
+                self.border_width
+            )
+        )
         # next shape
-        next_text = self.nes_font.render("Next", False, Color.WHITE.value)
-        self.screen.blit(next_text, ((self.p_x_end + self.p_x_start) // 2 - next_text.get_width() // 2, self.border_width))
+        next_text = self.nes_font.render('Next', False, Color.WHITE.value)
+        self.screen.blit(
+            next_text, 
+            (
+                (self.p_x_end + self.p_x_start) // 2 - next_text.get_width() // 2, 
+                self.border_width
+            )
+        )
         # logo
         quatris_text = self.logo_font.render('QUATRIS', False, Color.WHITE.value)
-        self.screen.blit(quatris_text, ((self.m_x_end + self.m_x_start) // 2 - quatris_text.get_width() // 2, self.m_y_end))
+        self.screen.blit(
+            quatris_text, 
+            (
+                self.disp_width // 2 - quatris_text.get_width() // 2, 
+                self.m_y_end
+            )
+        )
+        # credits
+        lucas_text = self.footer_font.render('Lucas Ausberger, May 2023', False, Color.WHITE.value)
+        self.screen.blit(
+            lucas_text,
+            (
+                self.disp_width // 2 - lucas_text.get_width() // 2,
+                self.m_y_end + quatris_text.get_height()
+            )
+        )
     
     def render(self):
         self.draw_block_matrix()

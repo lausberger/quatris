@@ -1,14 +1,13 @@
 import random
-from block import Block
+import pygame
+from copy import deepcopy
 from blockmatrix import BlockMatrix
-from color import Color
 from gamestatus import GameStatus
 from legality import Legality
 from gamerenderer import GameRenderer
 from tetromino import Tetromino
 from blockshape import BlockShape
-from copy import deepcopy
-import pygame
+
 
 class Quatris():
     def __init__(self):
@@ -22,16 +21,14 @@ class Quatris():
         self.tick_rate = 60
         self.drop_counter = 0
         self.input_interval = 5 # frames between registered inputs when key is held
-        self.dt = 0
         self.frames_until_input = { k: 0 for k in self.get_holdable_keys() }
-        self.num_shapes = 2
         self.held_shape = None
         self.can_hold = True
         self.current_shapes = []
         self.generate_shapes()
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.renderer = GameRenderer(self.board, self.current_shapes)
+        self.renderer = GameRenderer(self.board)
         self.renderer.generate_display()
     
     def get_input_keys(self) -> list[int]:
@@ -91,27 +88,6 @@ class Quatris():
                 new_block_matrix.insert(0, new_row)
             self.board.block_matrix = new_block_matrix
         return cleared_lines
-
-    def tick(self):
-        self.dt = self.clock.tick(self.tick_rate)
-        if not self.board.active_shape:
-            self.spawn_next_shape()
-        for block in self.board.active_shape.blocks():
-            x,y = block.coords()
-            if self.board.block_matrix[y][x]:
-                self.status = GameStatus.GameOver
-        if self.status == GameStatus.Continue:
-            if self.drop_counter == self.get_drop_rate():
-                self.shift_down()
-                self.drop_counter = 0
-            else:
-                self.drop_counter += 1
-            cleared_lines = self.check_board()
-            self.lines_cleared += cleared_lines
-            self.score += self.score_map[cleared_lines]
-            self.current_level = self.lines_cleared // 10
-            self.renderer.update_info(self.score, self.lines_cleared, self.current_level, self.current_shapes, self.held_shape)
-            self.renderer.render()
  
     def spawn_next_shape(self):
         self.board.spawn(self.current_shapes[0])
@@ -148,32 +124,32 @@ class Quatris():
                         break
         return status
     
-    def _with_legality_check(self, BLOCKSHAPE_METHOD) -> GameStatus:
+    def action_with_legality_check(self, BLOCKSHAPE_ACTION_METHOD) -> GameStatus:
         simulated_shape = deepcopy(self.board.active_shape)
-        BLOCKSHAPE_METHOD(simulated_shape)
+        BLOCKSHAPE_ACTION_METHOD(simulated_shape)
         match self.validate_move(simulated_shape):
             case Legality.Illegal:
                 return GameStatus.EndOfTurn
             case Legality.Legal:
-                BLOCKSHAPE_METHOD(self.board.active_shape)
+                BLOCKSHAPE_ACTION_METHOD(self.board.active_shape)
             case Legality.Impossible:
                 pass
         return GameStatus.Continue
 
     def rotate_right(self):
-        self.status = self._with_legality_check(BlockShape.rotate_right)
+        self.status = self.action_with_legality_check(BlockShape.rotate_right)
 
     def rotate_left(self):
-        self.status = self._with_legality_check(BlockShape.rotate_left)
+        self.status = self.action_with_legality_check(BlockShape.rotate_left)
 
     def shift_right(self):
-        self.status = self._with_legality_check(BlockShape.shift_right)
+        self.status = self.action_with_legality_check(BlockShape.shift_right)
 
     def shift_left(self):
-        self.status = self._with_legality_check(BlockShape.shift_left)
+        self.status = self.action_with_legality_check(BlockShape.shift_left)
 
     def shift_down(self):
-        self.status = self._with_legality_check(BlockShape.shift_down)
+        self.status = self.action_with_legality_check(BlockShape.shift_down)
     
     def hard_drop(self):
         while self.status != GameStatus.EndOfTurn:
@@ -190,21 +166,55 @@ class Quatris():
             self.board.active_shape = None
             self.status = GameStatus.EndOfTurn
             self.can_hold = False
+    
+    def tick(self):
+        self.clock.tick(self.tick_rate)
+        # for holds and hard drops
+        if self.status == GameStatus.EndOfTurn:
+            if self.board.active_shape:
+                self.can_hold = True
+                self.board.add_active_to_matrix()
+                self.board.active_shape = None
+                self.current_shapes.pop(0)
+            self.generate_shapes()
+        # spawn active shape if needed
+        if not self.board.active_shape:
+            self.spawn_next_shape()
+        # check for game over
+        for block in self.board.active_shape.blocks():
+            x,y = block.coords()
+            if self.board.block_matrix[y][x]:
+                self.status = GameStatus.GameOver
+        # progress game
+        if self.status == GameStatus.Continue:
+            if self.drop_counter == self.get_drop_rate():
+                self.shift_down()
+                self.drop_counter = 0
+            else:
+                self.drop_counter += 1
+            # update game data
+            cleared_lines = self.check_board()
+            self.lines_cleared += cleared_lines
+            self.score += self.score_map[cleared_lines]
+            self.current_level = self.lines_cleared // 10
+            # re-render
+            self.renderer.update_info(
+                self.score, 
+                self.lines_cleared, 
+                self.current_level, 
+                self.current_shapes, 
+                self.held_shape
+            )
+            self.renderer.render()
 
 def main():
     game = Quatris()
     while True:
-        if game.status == GameStatus.EndOfTurn:
-            if game.board.active_shape:
-                game.can_hold = True
-                game.board.add_active_to_matrix()
-                game.board.active_shape = None
-                game.current_shapes.pop(0)
-            game.generate_shapes()
         game.tick()
         if game.status == GameStatus.GameOver:
-            pass
-            # break
+            while pygame.event.poll().type != pygame.QUIT:
+                pass
+            break
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game.tear_down()
@@ -245,9 +255,6 @@ def main():
                                 game.shift_right()
                     elif game.frames_until_input[key] > 0:
                         game.frames_until_input[key] -= 1
-    print('Game over!')
-    # game.display_final_score()
-    game.tear_down()
     
 
 if __name__ == "__main__":

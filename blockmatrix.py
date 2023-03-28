@@ -11,14 +11,6 @@ class BlockMatrix():
         self.render_matrix = [['   ' for _ in range(width)] for _ in range(height)]
         self.active_shape = None
     
-    def __str__(self):
-        string = ''
-        for row in self.render_matrix:
-            string += '||' + ''.join(row) + '||\n'
-        string += '||' + '___' * (self.width) + '||\n\n'
-        string += ' ' * (self.width * 2 - 7) + 'QUATRIS'
-        return string
-    
     def reset(self):
         self.active_shape = None
         self.block_list = []

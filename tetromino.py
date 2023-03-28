@@ -1,6 +1,7 @@
 from enum import Enum
 from color import Color
 
+
 class Tetromino(Enum):
     I = {
         'rotations': [
