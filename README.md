@@ -12,7 +12,7 @@ Option 1: Download and execute the binary in the "Releases" tab
 
 Option 2: Clone the repository and execute the following:
 ```
-pip install -U pygame // if needed
+pip install -U pygame
 python3 quatris.py
 ```
 

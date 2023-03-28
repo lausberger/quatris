@@ -235,7 +235,7 @@ class GameRenderer():
             )
         )
         # credits
-        lucas_text = self.footer_font.render('Lucas Ausberger, May 2023', False, Color.WHITE.value)
+        lucas_text = self.footer_font.render('Lucas Ausberger, March 2023', False, Color.WHITE.value)
         self.screen.blit(
             lucas_text,
             (

@@ -206,56 +206,60 @@ class Quatris():
                 self.held_shape
             )
             self.renderer.render()
+    
+    def start(self):
+        while True:
+            self.tick()
+            if self.status == GameStatus.GameOver:
+                while pygame.event.poll().type != pygame.QUIT:
+                    pass
+                break
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.tear_down()
+                    break
+                # reset the delay timer for holdable keys on keydown
+                if event.type == pygame.KEYDOWN:
+                    match event.key:
+                        case pygame.K_a:
+                            self.frames_until_input[pygame.K_a] = 0
+                        case pygame.K_s:
+                            self.frames_until_input[pygame.K_s] = 0
+                        case pygame.K_d:
+                            self.frames_until_input[pygame.K_d] = 0
+                        case pygame.K_w:
+                            self.hard_drop()
+                        case pygame.K_j:
+                            self.rotate_left()
+                        case pygame.K_k:
+                            self.rotate_right()
+                        case pygame.K_h:
+                            self.hold_shape()
+                        case pygame.K_ESCAPE:
+                            pass
+                        case _:
+                            pass
+            if self.status != GameStatus.EndOfTurn:
+                pressed_keys = pygame.key.get_pressed()
+                for key in self.get_holdable_keys():
+                    if pressed_keys[key]:
+                        if self.frames_until_input[key] == 0:
+                            self.frames_until_input[key] = self.input_interval
+                            match key:
+                                case pygame.K_a:
+                                    self.shift_left()
+                                case pygame.K_s:
+                                    self.shift_down()
+                                case pygame.K_d:
+                                    self.shift_right()
+                        elif self.frames_until_input[key] > 0:
+                            self.frames_until_input[key] -= 1
+
 
 def main():
     game = Quatris()
-    while True:
-        game.tick()
-        if game.status == GameStatus.GameOver:
-            while pygame.event.poll().type != pygame.QUIT:
-                pass
-            break
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game.tear_down()
-                break
-            # reset the delay timer for holdable keys on keydown
-            if event.type == pygame.KEYDOWN:
-                match event.key:
-                    case pygame.K_a:
-                        game.frames_until_input[pygame.K_a] = 0
-                    case pygame.K_s:
-                        game.frames_until_input[pygame.K_s] = 0
-                    case pygame.K_d:
-                        game.frames_until_input[pygame.K_d] = 0
-                    case pygame.K_w:
-                        game.hard_drop()
-                    case pygame.K_j:
-                        game.rotate_left()
-                    case pygame.K_k:
-                        game.rotate_right()
-                    case pygame.K_h:
-                        game.hold_shape()
-                    case pygame.K_ESCAPE:
-                        pass
-                    case _:
-                        pass
-        if game.status != GameStatus.EndOfTurn:
-            pressed_keys = pygame.key.get_pressed()
-            for key in game.get_holdable_keys():
-                if pressed_keys[key]:
-                    if game.frames_until_input[key] == 0:
-                        game.frames_until_input[key] = game.input_interval
-                        match key:
-                            case pygame.K_a:
-                                game.shift_left()
-                            case pygame.K_s:
-                                game.shift_down()
-                            case pygame.K_d:
-                                game.shift_right()
-                    elif game.frames_until_input[key] > 0:
-                        game.frames_until_input[key] -= 1
-    
+    game.start()
+
 
 if __name__ == "__main__":
     main()
