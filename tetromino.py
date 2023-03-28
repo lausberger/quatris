@@ -11,7 +11,7 @@ class Tetromino(Enum):
         ],
         'color': Color.LIGHTBLUE,
         'spawn_offset': (3,-1),
-        'print_size': (4,4),
+        'dimensions': (4,4),
     }
     J = {
         'rotations': [
@@ -22,7 +22,7 @@ class Tetromino(Enum):
         ],
         'color': Color.BLUE,
         'spawn_offset': (3,0),
-        'print_size': (3,3),
+        'dimensions': (3,3),
     }
     L = {
         'rotations': [
@@ -33,7 +33,7 @@ class Tetromino(Enum):
         ],
         'color': Color.ORANGE,
         'spawn_offset': (3,0),
-        'print_size': (3,3),
+        'dimensions': (3,3),
     }
     O = {
         'rotations': [
@@ -44,7 +44,7 @@ class Tetromino(Enum):
         ],
         'color': Color.YELLOW,
         'spawn_offset': (3,0),
-        'print_size': (3,4),
+        'dimensions': (3,4),
     }
     S = {
         'rotations': [

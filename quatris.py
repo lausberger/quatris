@@ -4,6 +4,7 @@ from blockmatrix import BlockMatrix
 from color import Color
 from gamestatus import GameStatus
 from legality import Legality
+from gamerenderer import GameRenderer
 from tetromino import Tetromino
 from blockshape import BlockShape
 from copy import deepcopy
@@ -13,49 +14,42 @@ class Quatris():
     def __init__(self):
         self.board = BlockMatrix()
         self.status = GameStatus.Continue
+        self.tetrominos = list([Tetromino.__members__][0].values())
         self.score_map = {0: 0, 1: 40, 2: 100, 3: 300, 4: 1200}
         self.score = 0
         self.current_level = 0
         self.lines_cleared = 0
         self.tick_rate = 60
-        self.input_interval = 300 # ms between inputs
-        self.input_delay = 100
+        self.drop_counter = 0
+        self.input_interval = 5 # frames between registered inputs when key is held
         self.dt = 0
-        self.generate_display()
-
-    def generate_display(self):
-        self.block_size = 20
-        self.disp_height = self.block_size * self.board.height + 10
-        self.disp_width = self.block_size * self.board.width + 10
-        self.m_x_start = 5
-        self.m_x_end = self.disp_width - 5
-        self.m_y_start = 5
-        self.m_y_end = self.disp_height - 5
+        self.frames_until_input = { k: 0 for k in self.get_holdable_keys() }
+        self.num_shapes = 2
+        self.held_shape = None
+        self.can_hold = True
+        self.current_shapes = []
+        self.generate_shapes()
         pygame.init()
-        pygame.key.set_repeat(0, self.input_interval)
-        self.screen = pygame.display.set_mode((self.disp_width, self.disp_height))
-        self.screen.fill(Color.WHITE.value)
         self.clock = pygame.time.Clock()
+        self.renderer = GameRenderer(self.board, self.current_shapes)
+        self.renderer.generate_display()
     
-    def render(self):
-        for x, x_dim in enumerate(range(self.m_x_start, self.m_x_end, self.block_size)):
-            for y, y_dim in enumerate(range(self.m_y_start, self.m_y_end, self.block_size)):
-                square = pygame.Rect(x_dim, y_dim, self.block_size, self.block_size)
-                block = self.board.block_matrix[y][x]
-                if block:
-                    pygame.draw.rect(self.screen, block.color.value, square, 0)
-                else:
-                    pygame.draw.rect(self.screen, Color.BLACK.value, square, 0)
-                pygame.draw.rect(self.screen, Color.GRAY.value, square, 1)
-        # this shouldn't be required; fix game loop
-        if self.board.active_shape:
-            for block in self.board.active_shape.blocks():
-                x,y = block.coords()
-                x_dim = self.m_x_start + (x * self.block_size)
-                y_dim = self.m_y_start + (y * self.block_size)
-                square = pygame.Rect(x_dim, y_dim, self.block_size, self.block_size)
-                pygame.draw.rect(self.screen, block.color.value, square, 0)
-                pygame.draw.rect(self.screen, Color.GRAY.value, square, 1)
+    def get_input_keys(self) -> list[int]:
+        return [pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d, pygame.K_j, pygame.K_k, pygame.K_h, pygame.K_ESCAPE]
+    
+    def get_holdable_keys(self) -> list[int]:
+        return [pygame.K_a, pygame.K_s, pygame.K_d]
+
+    def generate_shapes(self):
+        if len(self.current_shapes) < 2:
+            if not self.current_shapes:
+                current_shape = random.choice(self.tetrominos)
+            else:
+                current_shape = self.current_shapes[0]
+            next_shape = random.choice(self.tetrominos)
+            while current_shape == next_shape:
+                next_shape = random.choice(self.tetrominos)
+            self.current_shapes = [current_shape, next_shape]
 
     def get_drop_rate(self):
         match self.current_level:
@@ -99,13 +93,29 @@ class Quatris():
         return cleared_lines
 
     def tick(self):
-        cleared_lines = self.check_board()
-        self.lines_cleared += cleared_lines
-        self.score += self.score_map[cleared_lines]
-        self.current_level = self.lines_cleared // 10
-        print('lines cleared',self.lines_cleared)
-        print('level',self.current_level)
-        print('score',self.score)
+        self.dt = self.clock.tick(self.tick_rate)
+        if not self.board.active_shape:
+            self.spawn_next_shape()
+        for block in self.board.active_shape.blocks():
+            x,y = block.coords()
+            if self.board.block_matrix[y][x]:
+                self.status = GameStatus.GameOver
+        if self.status == GameStatus.Continue:
+            if self.drop_counter == self.get_drop_rate():
+                self.shift_down()
+                self.drop_counter = 0
+            else:
+                self.drop_counter += 1
+            cleared_lines = self.check_board()
+            self.lines_cleared += cleared_lines
+            self.score += self.score_map[cleared_lines]
+            self.current_level = self.lines_cleared // 10
+            self.renderer.update_info(self.score, self.lines_cleared, self.current_level, self.current_shapes, self.held_shape)
+            self.renderer.render()
+ 
+    def spawn_next_shape(self):
+        self.board.spawn(self.current_shapes[0])
+        self.status = GameStatus.Continue
 
     def tear_down(self):
         self.board.reset()
@@ -150,76 +160,94 @@ class Quatris():
                 pass
         return GameStatus.Continue
 
-    def rotate_right(self) -> GameStatus:
+    def rotate_right(self):
         self.status = self._with_legality_check(BlockShape.rotate_right)
 
-    def rotate_left(self) -> GameStatus:
+    def rotate_left(self):
         self.status = self._with_legality_check(BlockShape.rotate_left)
 
-    def shift_right(self) -> GameStatus:
+    def shift_right(self):
         self.status = self._with_legality_check(BlockShape.shift_right)
 
-    def shift_left(self) -> GameStatus:
+    def shift_left(self):
         self.status = self._with_legality_check(BlockShape.shift_left)
 
-    def shift_down(self) -> GameStatus:
+    def shift_down(self):
         self.status = self._with_legality_check(BlockShape.shift_down)
     
-    def hard_drop(self) -> GameStatus:
+    def hard_drop(self):
         while self.status != GameStatus.EndOfTurn:
             self.shift_down()
-            continue
+    
+    def hold_shape(self):
+        if self.can_hold:
+            if self.held_shape:
+                prev_active = self.current_shapes.pop(0)
+                self.current_shapes.insert(0, self.held_shape)
+                self.held_shape = prev_active
+            else:
+                self.held_shape = self.current_shapes.pop(0)
+            self.board.active_shape = None
+            self.status = GameStatus.EndOfTurn
+            self.can_hold = False
 
 def main():
-    tetrominos = list([Tetromino.__members__][0].values())
     game = Quatris()
-    game.board.spawn(random.choice(tetrominos))
-    c = 0
     while True:
-        game.render()
-        game.status = GameStatus.Continue
-        if not game.board.active_shape:
-            game.board.spawn(random.choice(tetrominos))
+        if game.status == GameStatus.EndOfTurn:
+            if game.board.active_shape:
+                game.can_hold = True
+                game.board.add_active_to_matrix()
+                game.board.active_shape = None
+                game.current_shapes.pop(0)
+            game.generate_shapes()
         game.tick()
-        if c == game.get_drop_rate():
-            game.shift_down()
-            c = 0
+        if game.status == GameStatus.GameOver:
+            pass
+            # break
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game.tear_down()
                 break
+            # reset the delay timer for holdable keys on keydown
             if event.type == pygame.KEYDOWN:
                 match event.key:
+                    case pygame.K_a:
+                        game.frames_until_input[pygame.K_a] = 0
+                    case pygame.K_s:
+                        game.frames_until_input[pygame.K_s] = 0
+                    case pygame.K_d:
+                        game.frames_until_input[pygame.K_d] = 0
                     case pygame.K_w:
                         game.hard_drop()
-                    case pygame.K_a:
-                        game.shift_left()
-                    case pygame.K_s:
-                        game.shift_down()
-                    case pygame.K_d:
-                        game.shift_right()
                     case pygame.K_j:
                         game.rotate_left()
                     case pygame.K_k:
                         game.rotate_right()
                     case pygame.K_h:
-                        pass
+                        game.hold_shape()
                     case pygame.K_ESCAPE:
                         pass
                     case _:
                         pass
-        match game.status:
-            case GameStatus.Continue:
-                pass
-            case GameStatus.EndOfTurn:
-                game.board.add_active_to_matrix()
-                game.board.active_shape = None
-            case GameStatus.GameOver:
-                game.tear_down()
-                exit(0)
-        pygame.display.update()
-        game.dt = game.clock.tick(game.tick_rate)
-        c += 1
+        if game.status != GameStatus.EndOfTurn:
+            pressed_keys = pygame.key.get_pressed()
+            for key in game.get_holdable_keys():
+                if pressed_keys[key]:
+                    if game.frames_until_input[key] == 0:
+                        game.frames_until_input[key] = game.input_interval
+                        match key:
+                            case pygame.K_a:
+                                game.shift_left()
+                            case pygame.K_s:
+                                game.shift_down()
+                            case pygame.K_d:
+                                game.shift_right()
+                    elif game.frames_until_input[key] > 0:
+                        game.frames_until_input[key] -= 1
+    print('Game over!')
+    # game.display_final_score()
+    game.tear_down()
     
 
 if __name__ == "__main__":

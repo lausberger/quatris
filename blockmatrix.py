@@ -23,22 +23,6 @@ class BlockMatrix():
         self.active_shape = None
         self.block_list = []
         self.block_matrix = [[None for _ in range(self.width)] for _ in range(self.height)]
-    #     self.reset_view()
-    
-    # def reset_view(self):
-    #     self.render_matrix = [['   ' for _ in range(self.width)] for _ in range(self.height)]
-    
-    # def update_view(self):
-    #     self.reset_view()
-    #     for row in self.block_matrix:
-    #         # print(row)
-    #         for block in row:
-    #             if block:
-    #                 x,y = block.coords()
-    #                 self.render_matrix[y][x] = ' O '
-    #     for block in self.active_shape.blocks():
-    #         x,y = block.coords()
-    #         self.render_matrix[y][x] = ' O '
     
     def add_active_to_matrix(self):
         for block in self.active_shape.blocks():
