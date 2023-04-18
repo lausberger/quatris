@@ -4,7 +4,7 @@
 
 A copyright non-infringing puzzle game about falling tetrominos. Written in 5 days by Lucas Ausberger.
 
-<img width="250" alt="Game over!" src="https://user-images.githubusercontent.com/74087830/228324059-4058f4ec-3045-4945-9095-b77e8b58ba05.png">
+![quatrispreview](https://user-images.githubusercontent.com/74087830/232657550-d4311b9b-dfbb-482e-a1c8-8044e988ea2b.gif)
 
 ## Getting Started
 
